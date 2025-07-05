@@ -39,20 +39,20 @@
             <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="movie-search">
                 <i class="fas fa-film w-6 text-center"></i><span class="ml-3">Movie Search</span>
             </a>
-            <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="sms-blaster">
-                <i class="fas fa-sms w-6 text-center"></i><span class="ml-3">SMS Blaster</span>
-            </a>
             <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="trip-planner">
                 <i class="fas fa-plane-departure w-6 text-center"></i><span class="ml-3">Trip Planner</span>
             </a>
             <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="qr-payment">
                 <i class="fas fa-qrcode w-6 text-center"></i><span class="ml-3">QR Payment</span>
             </a>
+            <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="sms-blaster">
+                <i class="fas fa-sms w-6 text-center"></i><span class="ml-3">SMS Blaster</span>
+            </a>            
         </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-6 overflow-y-auto">
+    <main id="main-content" class="flex-1 p-6 overflow-y-auto">
 
         <!-- Movie Search Section -->
         <section id="movie-search" class="content-section">
@@ -174,7 +174,6 @@
                     <button class="trip-tab py-3 px-6 text-lg font-semibold text-gray-500 border-b-4 border-transparent" data-tab="booking">
                         <i class="fas fa-plane-departure mr-2"></i>Booking
                     </button>
-                    <!-- NEW: Hotel Tab -->
                     <button class="trip-tab py-3 px-6 text-lg font-semibold text-gray-500 border-b-4 border-transparent" data-tab="hotel">
                         <i class="fas fa-hotel mr-2"></i>Hotels
                     </button>
