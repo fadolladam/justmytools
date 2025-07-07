@@ -22,7 +22,7 @@ window.initMovies = function() {
     let ytsCurrentQuality = 'all';
     let ytsCurrentGenre = 'all';
     let ytsCurrentSortBy = 'date_added';
-    let ytsCurrentLimit = 20;
+    let ytsCurrentLimit = 6;
 
     const tmdbContent = document.getElementById('tmdb-content');
     const tmdbButtons = document.querySelectorAll('.tmdb-btn');
