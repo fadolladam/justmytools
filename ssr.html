@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md flex flex-col flex-shrink-0">
+        <div class="p-6 text-2xl font-bold text-blue-600 border-b">My Dashboard</div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="#" class="sidebar-link flex items-center px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" data-target="trip-planner">
+                <i class="fas fa-plane-departure w-6 text-center"></i><span class="ml-3">Trip Planner</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1 p-6 overflow-y-auto">
+
+        <!-- Trip Planner Section -->
+        <section id="trip-planner" class="content-section">
+            <header class="mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 text-center mb-2">Umrah Trip Planner</h1>
+                <p class="text-center text-gray-500 mb-8">Plan your Umrah journey with ease.</p>
+            </header>
+
+            <!-- Trip Date Form -->
+            <section class="mb-8">
+                <label for="departureDate" class="block text-gray-800">Departure Date</label>
+                <input type="date" id="departureDate" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none">
+                <button id="submitDate" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg">Set Trip Dates</button>
+            </section>
+
+            <!-- Station Selection -->
+            <section>
+                <label for="fromStation" class="block text-gray-800">From Station</label>
+                <select id="fromStation" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none">
+                    <option value="5">Madinah</option>
+                    <option value="1">Makkah</option>
+                    <option value="4">KAEC</option>
+                    <option value="2">Al-Sulimaniyah - JEDDAH</option>
+                    <option value="3">AIRPORT - JEDDAH</option>
+                </select>
+
+                <label for="toStation" class="block mt-4 text-gray-800">To Station</label>
+                <select id="toStation" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none">
+                    <option value="1">Makkah</option>
+                    <option value="5">Madinah</option>
+                    <option value="4">KAEC</option>
+                    <option value="2">Al-Sulimaniyah - JEDDAH</option>
+                    <option value="3">AIRPORT - JEDDAH</option>
+                </select>
+            </section>
+
+            <button id="searchButton" class="mt-6 px-8 py-3 bg-indigo-600 text-white rounded-lg">Search Train Timetable</button>
+        </section>
+
+    </main>
+
+    <script>
+        // Initializing the Trip Planner Section
+        const departureDateInput = document.getElementById('departureDate');
+        const fromStationSelect = document.getElementById('fromStation');
+        const toStationSelect = document.getElementById('toStation');
+        const searchButton = document.getElementById('searchButton');
+
+        // Handle search button click
+        searchButton.addEventListener('click', function() {
+            const fromStation = fromStationSelect.value;
+            const toStation = toStationSelect.value;
+            const departureDate = departureDateInput.value;
+
+            if (departureDate) {
+                // Format the date to dd/MM/yyyy
+                const formattedDate = new Date(departureDate);
+                const day = String(formattedDate.getDate()).padStart(2, '0');
+                const month = String(formattedDate.getMonth() + 1).padStart(2, '0'); // getMonth() is 0-indexed
+                const year = formattedDate.getFullYear();
+                const formattedDateStr = `${day}%2F${month}%2F${year}`; // encoded for URL
+
+                // Construct the URL with the selected parameters
+                const url = `https://sar.hhr.sa/timetable?p_p_id=HhrFlatTimetables&p_p_lifecycle=0&_HhrFlatTimetables_javax.portlet.action=sendTicketData&_HhrFlatTimetables_businessPartner=+&_HhrFlatTimetables_formDate=1752667805218&_HhrFlatTimetables_idToStation=${toStation}&_HhrFlatTimetables_language=en_US&_HhrFlatTimetables_departureDate=${formattedDateStr}&_HhrFlatTimetables_idFromStation=${fromStation}&_HhrFlatTimetables_datePattern=dd%2FMM%2Fyyyy`;
+
+                // Open the URL in a new tab
+                window.open(url, '_blank');
+            } else {
+                alert('Please select a valid departure date.');
+            }
+        });
+    </script>
+
+</body>
+</html>

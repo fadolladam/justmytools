@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traveler Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center mb-6">Traveler Information Form</h1>
+
+        <!-- Traveler Form -->
+        <form id="travelerForm" class="space-y-4 bg-white p-6 rounded shadow-lg">
+            <input type="text" id="firstName" class="w-full p-2 border rounded" placeholder="First Name" required>
+            <input type="text" id="middleName" class="w-full p-2 border rounded" placeholder="Middle Name">
+            <input type="text" id="familyName" class="w-full p-2 border rounded" placeholder="Family Name" required>
+            <input type="date" id="birthDate" class="w-full p-2 border rounded" placeholder="Date of Birth" required>
+            <select id="gender" class="w-full p-2 border rounded">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+            </select>
+            <input type="text" id="documentId" class="w-full p-2 border rounded" placeholder="Document ID" required>
+            <input type="date" id="expireDate" class="w-full p-2 border rounded" placeholder="Expiry Date" required>
+            <input type="text" id="nationality" class="w-full p-2 border rounded" placeholder="Nationality" required>
+            <label class="inline-flex items-center">
+                <input type="checkbox" id="specialNeeds" class="form-checkbox"> Special Needs
+            </label>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded mt-4">Add Traveler</button>
+        </form>
+
+        <h2 class="text-2xl font-bold text-center my-6">Traveler List</h2>
+
+        <!-- Traveler List Table -->
+        <div id="travelerList" class="overflow-x-auto">
+            <table class="min-w-full bg-white border rounded shadow-md">
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border">First Name</th>
+                        <th class="py-2 px-4 border">Family Name</th>
+                        <th class="py-2 px-4 border">Nationality</th>
+                        <th class="py-2 px-4 border">Birth Date</th>
+                        <th class="py-2 px-4 border">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="travelerData">
+                    <!-- Traveler rows will be inserted here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Array to hold traveler data
+        const travelersData = [];
+
+        // Function to fill out the form dynamically with traveler data
+        function fillTravelerForm() {
+            const travelerDataTable = document.getElementById("travelerData");
+            travelerDataTable.innerHTML = ""; // Clear existing rows
+
+            travelersData.forEach((traveler, index) => {
+                const row = document.createElement("tr");
+                row.classList.add("text-center");
+
+                row.innerHTML = `
+                    <td class="py-2 px-4 border">${traveler.firstName}</td>
+                    <td class="py-2 px-4 border">${traveler.familyName}</td>
+                    <td class="py-2 px-4 border">${traveler.nationality}</td>
+                    <td class="py-2 px-4 border">${traveler.birthDate}</td>
+                    <td class="py-2 px-4 border">
+                        <button class="text-red-500" onclick="removeTraveler(${index})">Remove</button>
+                    </td>
+                `;
+
+                travelerDataTable.appendChild(row);
+            });
+        }
+
+        // Function to remove a traveler from the list
+        function removeTraveler(index) {
+            travelersData.splice(index, 1);
+            fillTravelerForm();
+        }
+
+        // Function to handle form submission
+        document.getElementById("travelerForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent page refresh
+
+            // Get values from the form fields
+            const firstName = document.getElementById("firstName").value;
+            const middleName = document.getElementById("middleName").value;
+            const familyName = document.getElementById("familyName").value;
+            const birthDate = document.getElementById("birthDate").value;
+            const gender = document.getElementById("gender").value;
+            const documentId = document.getElementById("documentId").value;
+            const expireDate = document.getElementById("expireDate").value;
+            const nationality = document.getElementById("nationality").value;
+            const specialNeeds = document.getElementById("specialNeeds").checked;
+
+            // Add new traveler to travelersData array
+            travelersData.push({
+                firstName,
+                middleName,
+                familyName,
+                birthDate,
+                gender,
+                documentType: "1", // Example, can be changed dynamically if needed
+                documentId,
+                expireDate,
+                nationality,
+                specialNeeds
+            });
+
+            // Call the function to update the traveler list display
+            fillTravelerForm();
+
+            // Reset form fields
+            document.getElementById("travelerForm").reset();
+        });
+
+    </script>
+</body>
+
+</html>

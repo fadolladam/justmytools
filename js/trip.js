@@ -60,6 +60,12 @@ window.initTripPlanner = function() {
         leg3: document.getElementById('logisticsLink3'),
     };
 
+    // NEW: Train SSR Elements
+    const trainDepartureDateInput = document.getElementById('trainDepartureDate');
+    const fromStationSelect = document.getElementById('fromStation');
+    const toStationSelect = document.getElementById('toStation');
+    const trainSearchButton = document.getElementById('trainSearchButton');
+
     // --- UTILITY FUNCTIONS ---
     const formatDate = (date) => date.toISOString().split('T')[0];
     const formatCurrency = (amount) => isNaN(amount) ? '$0.00' : amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -211,6 +217,21 @@ window.initTripPlanner = function() {
         return `https://us.trip.com/hotels/${city.toLowerCase()}-hotels/list?checkin=${formattedCheckin}&checkout=${formattedCheckout}&adult=${adultQuantityInput.value}&children=${childQuantityInput.value}&locale=en-US&curr=USD`;
     };
 
+    // NEW: Function to create Train SSR URL
+    const createTrainSearchUrl = (fromStation, toStation, departureDate) => {
+        if (!departureDate) {
+            alert('Please select a valid departure date.');
+            return '#'; // Return a dummy URL or handle error
+        }
+        const formattedDate = new Date(departureDate);
+        const day = String(formattedDate.getDate()).padStart(2, '0');
+        const month = String(formattedDate.getMonth() + 1).padStart(2, '0'); // getMonth() is 0-indexed
+        const year = formattedDate.getFullYear();
+        const formattedDateStr = `${day}%2F${month}%2F${year}`; // encoded for URL
+
+        return `https://sar.hhr.sa/timetable?p_p_id=HhrFlatTimetables&p_p_lifecycle=0&_HhrFlatTimetables_javax.portlet.action=sendTicketData&_HhrFlatTimetables_businessPartner=+&_HhrFlatTimetables_formDate=1752667805218&_HhrFlatTimetables_idToStation=${toStation}&_HhrFlatTimetables_language=en_US&_HhrFlatTimetables_departureDate=${formattedDateStr}&_HhrFlatTimetables_idFromStation=${fromStation}&_HhrFlatTimetables_datePattern=dd%2FMM%2Fyyyy`;
+    };
+
     // --- EVENT LISTENERS ---
     if(departureDateInput) departureDateInput.addEventListener('change', updateItinerary);
     if(adultQuantityInput) adultQuantityInput.addEventListener('input', updateItinerary);
@@ -246,6 +267,20 @@ window.initTripPlanner = function() {
         if(makkahCheckinInput.value) window.open(createHotelSearchUrl('Makkah', makkahCheckinInput.value, makkahCheckoutInput.value), '_blank');
         else alert('Please select a departure date first.');
     });
+
+    // NEW: Train SSR Search Button Listener
+    if (trainSearchButton) {
+        trainSearchButton.addEventListener('click', function() {
+            const fromStation = fromStationSelect.value;
+            const toStation = toStationSelect.value;
+            const departureDate = trainDepartureDateInput.value;
+
+            const url = createTrainSearchUrl(fromStation, toStation, departureDate);
+            if (url && url !== '#') {
+                window.open(url, '_blank');
+            }
+        });
+    }
     
     // --- INITIALIZATION ---
     const currentDateEl = document.getElementById('currentDate');
