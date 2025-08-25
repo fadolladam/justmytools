@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Media Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .aspect-ratio-btn.active {
+            background-color: #8B5CF6; /* purple-500 */
+            border-color: #A78BFA; /* purple-400 */
+        }
+        .tab-btn.active {
+            background-color: #6D28D9; /* violet-700 */
+            color: white;
+        }
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4 lg:p-8">
+
+    <div class="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
+
+        <!-- Left Panel: Controls -->
+        <div class="w-full md:w-1/3 bg-gray-800 rounded-2xl shadow-2xl p-6">
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">Generation Controls</h1>
+                    <p class="text-gray-400 mt-1 text-sm">Customize your creation.</p>
+                </div>
+
+                <!-- Tabs -->
+                <div class="bg-gray-900 rounded-lg p-1 grid grid-cols-3 gap-1">
+                    <button id="single-image-tab" class="tab-btn active w-full py-2 rounded-md text-sm font-semibold transition">Image</button>
+                    <button id="storyboard-tab" class="tab-btn w-full py-2 rounded-md text-sm font-semibold transition text-gray-400">Storyboard</button>
+                    <button id="json-batch-tab" class="tab-btn w-full py-2 rounded-md text-sm font-semibold transition text-gray-400">JSON Batch</button>
+                </div>
+
+                <!-- Input Panels -->
+                <div id="input-panels">
+                    <!-- Single Image Panel -->
+                    <div id="single-image-panel" class="space-y-6">
+                        <div>
+                            <label for="prompt-input" class="block mb-2 text-sm font-medium text-gray-300">Prompt</label>
+                            <textarea id="prompt-input" rows="5" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none" placeholder="e.g., A majestic lion wearing a crown, cinematic lighting"></textarea>
+                        </div>
+                    </div>
+                    <!-- Storyboard Panel -->
+                    <div id="storyboard-panel" class="hidden space-y-6">
+                         <div>
+                            <label for="storyboard-json-input" class="block mb-2 text-sm font-medium text-gray-300">Storyboard (Campaign JSON)</label>
+                            <textarea id="storyboard-json-input" rows="10" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none font-mono text-xs" placeholder='{&#10;  "campaign": {&#10;    "style": "Realistic, professional",&#10;    "negative_prompt": "blurry, watermark"&#10;  },&#10;  "frames": [&#10;    {&#10;      "title": "Frame 1: Discovery",&#10;      "prompt": "A lone astronaut on a red planet.",&#10;      "aspect_ratio": "16:9"&#10;    }&#10;  ]&#10;}'></textarea>
+                        </div>
+                    </div>
+                    <!-- JSON Batch Panel -->
+                    <div id="json-batch-panel" class="hidden space-y-6">
+                        <div>
+                            <label for="batch-json-input" class="block mb-2 text-sm font-medium text-gray-300">Batch Prompts (JSON)</label>
+                            <textarea id="batch-json-input" rows="10" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none font-mono text-xs" placeholder='[&#10;  {&#10;    "prompt": "A professional headshot of a Cambodian young woman, 22 years old..."&#10;  },&#10;  {&#10;    "prompt": "A corporate headshot of a Cambodian young man, 24 years old..."&#10;  }&#10;]'></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shared Controls -->
+                <div class="space-y-6">
+                    <!-- Model Selection -->
+                    <div>
+                        <label for="model-select" class="block mb-2 text-sm font-medium text-gray-300">Image Model</label>
+                        <select id="model-select" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            <option value="imagen-3.0-generate-002">Imagen 3 (Higher Quality)</option>
+                            <option value="gemini-2.0-flash-preview-image-generation" selected>Gemini Flash (Faster)</option>
+                        </select>
+                    </div>
+
+                    <!-- Negative Prompt Input -->
+                    <div>
+                        <label for="negative-prompt-input" class="block mb-2 text-sm font-medium text-gray-300">Negative Prompt</label>
+                        <textarea id="negative-prompt-input" rows="3" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none" placeholder="e.g., blurry, cartoon, watermark"></textarea>
+                    </div>
+
+                    <!-- Aspect Ratio -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-300">Aspect Ratio (default)</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="aspect-ratio-btn active p-2 border-2 border-gray-600 rounded-lg transition" data-ratio="1:1">Square</button>
+                            <button class="aspect-ratio-btn p-2 border-2 border-gray-600 rounded-lg transition" data-ratio="16:9">16:9</button>
+                            <button class="aspect-ratio-btn p-2 border-2 border-gray-600 rounded-lg transition" data-ratio="9:16">9:16</button>
+                        </div>
+                    </div>
+
+                    <!-- Number of Images -->
+                    <div>
+                        <label for="image-count" class="block mb-2 text-sm font-medium text-gray-300">Images per Prompt</label>
+                        <div class="flex items-center justify-center gap-2">
+                            <button id="count-minus" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">-</button>
+                            <input type="number" id="image-count" value="1" min="1" max="10" class="w-20 text-center bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            <button id="count-plus" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button id="generate-btn" class="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 ease-in-out flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
+                        Generate
+                    </button>
+                    <!-- Download All Button -->
+                    <button id="download-all-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out flex items-center justify-center hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download All (.zip)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Display -->
+        <div id="display-area" class="w-full md:w-2/3 bg-gray-800 rounded-2xl shadow-2xl p-6 flex items-center justify-center">
+             <!-- Loading Spinner -->
+            <div id="loader" class="text-center hidden">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-400 mt-3">Generating your masterpiece...</p>
+            </div>
+            <!-- Results Container -->
+            <div id="results-container" class="w-full h-full overflow-y-auto pr-2">
+                <!-- Placeholder -->
+                <div id="placeholder" class="h-full flex flex-col items-center justify-center text-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+                    Your generated media will appear here
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Message Box -->
+        <div id="error-box" class="fixed bottom-4 right-4 max-w-sm w-full p-4 bg-red-900 border border-red-700 text-red-200 rounded-lg shadow-lg hidden">
+            <p><strong class="font-semibold">Error:</strong> <span id="error-message"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const tabs = {
+            single: document.getElementById('single-image-tab'),
+            storyboard: document.getElementById('storyboard-tab'),
+            json: document.getElementById('json-batch-tab')
+        };
+        const panels = {
+            single: document.getElementById('single-image-panel'),
+            storyboard: document.getElementById('storyboard-panel'),
+            json: document.getElementById('json-batch-panel')
+        };
+        const promptInput = document.getElementById('prompt-input');
+        const storyboardJsonInput = document.getElementById('storyboard-json-input');
+        const batchJsonInput = document.getElementById('batch-json-input');
+        const modelSelect = document.getElementById('model-select');
+        const negativePromptInput = document.getElementById('negative-prompt-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const loader = document.getElementById('loader');
+        const resultsContainer = document.getElementById('results-container');
+        const placeholder = document.getElementById('placeholder');
+        const errorBox = document.getElementById('error-box');
+        const errorMessage = document.getElementById('error-message');
+        const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
+        const imageCountInput = document.getElementById('image-count');
+        const countMinusBtn = document.getElementById('count-minus');
+        const countPlusBtn = document.getElementById('count-plus');
+
+        // --- App State ---
+        const apiKey = "AIzaSyCJH851dLfXm83BwjhFiDqdH7WnlHbEDvs"; // WARNING: Insecure
+        let selectedAspectRatio = '1:1';
+        let currentMode = 'single';
+        let generatedImagesData = [];
+
+        // --- Event Listeners ---
+        tabs.single.addEventListener('click', () => switchMode('single'));
+        tabs.storyboard.addEventListener('click', () => switchMode('storyboard'));
+        tabs.json.addEventListener('click', () => switchMode('json'));
+        generateBtn.addEventListener('click', handleGeneration);
+        downloadAllBtn.addEventListener('click', downloadAllImagesAsZip);
+        aspectRatioBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aspectRatioBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedAspectRatio = btn.dataset.ratio;
+            });
+        });
+        countMinusBtn.addEventListener('click', () => updateImageCount(-1));
+        countPlusBtn.addEventListener('click', () => updateImageCount(1));
+
+        // --- Functions ---
+        function updateImageCount(change) {
+            let count = parseInt(imageCountInput.value) + change;
+            if (count >= 1 && count <= 10) {
+                imageCountInput.value = count;
+            }
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            Object.values(tabs).forEach(tab => tab.classList.remove('active', 'text-white'));
+            Object.values(panels).forEach(panel => panel.classList.add('hidden'));
+            tabs[mode].classList.add('active', 'text-white');
+            tabs[mode].classList.remove('text-gray-400');
+            panels[mode].classList.remove('hidden');
+            Object.keys(tabs).filter(key => key !== mode).forEach(key => tabs[key].classList.add('text-gray-400'));
+        }
+
+        function handleGeneration() {
+            if (currentMode === 'single') generateSingleImage();
+            else if (currentMode === 'storyboard') generateStoryboard();
+            else if (currentMode === 'json') generateJsonBatch();
+        }
+
+        function setupLoadingState() {
+            hideError();
+            resultsContainer.innerHTML = '';
+            placeholder.classList.add('hidden');
+            loader.classList.remove('hidden');
+            generateBtn.disabled = true;
+            downloadAllBtn.classList.add('hidden');
+            generatedImagesData = [];
+        }
+
+        function resetGenerateButton() {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>Generate`;
+        }
+
+        async function generateImagesForPrompt(prompt, aspectRatio, negativePrompt, count) {
+            const promises = [];
+            for (let i = 0; i < count; i++) {
+                promises.push(fetchImage(prompt, aspectRatio, negativePrompt));
+            }
+            return Promise.all(promises);
+        }
+
+        async function generateSingleImage() {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) return showError("Please enter a prompt.");
+            
+            setupLoadingState();
+            const imageCount = parseInt(imageCountInput.value);
+            generateBtn.innerHTML = `<div class="spinner !w-6 !h-6 !border-2"></div><span class="ml-2">Generating ${imageCount} image(s)...</span>`;
+
+            try {
+                const images = await generateImagesForPrompt(userPrompt, selectedAspectRatio, negativePromptInput.value.trim(), imageCount);
+                loader.classList.add('hidden');
+                displayPromptGroup(null, images, resultsContainer);
+            } catch (error) {
+                handleError(error);
+            } finally {
+                resetGenerateButton();
+            }
+        }
+
+        async function generateStoryboard() {
+            const jsonInput = storyboardJsonInput.value.trim();
+            if (!jsonInput) return showError("Please enter your storyboard JSON.");
+
+            let data;
+            try { data = JSON.parse(jsonInput); } 
+            catch (e) { return showError("Invalid JSON format."); }
+
+            if (typeof data !== 'object' || !data.frames || !Array.isArray(data.frames)) {
+                return showError("Unsupported Storyboard JSON. Use the campaign/frames format.");
+            }
+
+            setupLoadingState();
+            loader.classList.add('hidden');
+            const imageCount = parseInt(imageCountInput.value);
+
+            for (let i = 0; i < data.frames.length; i++) {
+                const frame = data.frames[i];
+                generateBtn.innerHTML = `<div class="spinner !w-6 !h-6 !border-2"></div><span class="ml-2">Frame ${i + 1}/${data.frames.length}...</span>`;
+                try {
+                    const fullPrompt = `${frame.prompt}, ${data.campaign?.style || ''}`.trim();
+                    const frameAspectRatio = frame.aspect_ratio || selectedAspectRatio;
+                    const negPrompt = data.campaign?.negative_prompt || negativePromptInput.value.trim();
+                    
+                    const images = await generateImagesForPrompt(fullPrompt, frameAspectRatio, negPrompt, imageCount);
+                    
+                    const sanitizedTitle = (frame.title || `frame_${i+1}`).replace(/[^a-zA-Z0-9]/g, '_');
+                    images.forEach((imgData, imgIndex) => {
+                        generatedImagesData.push({ name: `${sanitizedTitle}_${imgIndex + 1}.png`, data: imgData });
+                    });
+                    
+                    displayPromptGroup(frame.title || `Frame ${i + 1}`, images, resultsContainer);
+                } catch (error) {
+                    handleError(error, `Failed on frame "${frame.title || i + 1}".`);
+                    break;
+                }
+            }
+            
+            if (generatedImagesData.length > 0) downloadAllBtn.classList.remove('hidden');
+            resetGenerateButton();
+        }
+
+        async function generateJsonBatch() {
+            const jsonInput = batchJsonInput.value.trim();
+            if (!jsonInput) return showError("Please enter a JSON array of prompts.");
+
+            let prompts;
+            try {
+                prompts = JSON.parse(jsonInput);
+                if (!Array.isArray(prompts) || !prompts.every(p => typeof p.prompt === 'string')) throw new Error();
+            } catch (e) {
+                return showError("Invalid JSON. Please provide an array of objects, each with a 'prompt' key.");
+            }
+
+            setupLoadingState();
+            loader.classList.add('hidden');
+            const imageCount = parseInt(imageCountInput.value);
+
+            for (let i = 0; i < prompts.length; i++) {
+                const item = prompts[i];
+                generateBtn.innerHTML = `<div class="spinner !w-6 !h-6 !border-2"></div><span class="ml-2">Prompt ${i + 1}/${prompts.length}...</span>`;
+                try {
+                    const images = await generateImagesForPrompt(item.prompt, selectedAspectRatio, negativePromptInput.value.trim(), imageCount);
+                    images.forEach((imgData, imgIndex) => {
+                        generatedImagesData.push({ name: `prompt_${i + 1}_image_${imgIndex + 1}.png`, data: imgData });
+                    });
+                    displayPromptGroup(`Prompt ${i + 1}`, images, resultsContainer);
+                } catch (error) {
+                    handleError(error, `Failed on prompt ${i + 1}.`);
+                    break;
+                }
+            }
+            
+            if (generatedImagesData.length > 0) downloadAllBtn.classList.remove('hidden');
+            resetGenerateButton();
+        }
+
+        async function fetchImage(prompt, aspectRatio, negativePrompt) {
+            const selectedModel = modelSelect.value;
+            let fullPrompt = `${prompt}, ${aspectRatio} aspect ratio`;
+            if (negativePrompt) fullPrompt += `. Negative prompt: ${negativePrompt}`;
+
+            let apiUrl = '';
+            let payload = {};
+
+            if (selectedModel === 'imagen-3.0-generate-002') {
+                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+                payload = { instances: [{ prompt: fullPrompt }], parameters: { "sampleCount": 1 } };
+            } else {
+                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${apiKey}`;
+                payload = { contents: [{ parts: [{ text: fullPrompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } };
+            }
+
+            const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || `HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            let base64ImageData = null;
+
+            if (selectedModel === 'imagen-3.0-generate-002') {
+                base64ImageData = result.predictions?.[0]?.bytesBase64Encoded;
+            } else {
+                const imagePart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                base64ImageData = imagePart?.inlineData?.data;
+            }
+
+            if (base64ImageData) return base64ImageData;
+            else throw new Error(result?.promptFeedback?.blockReason || "API response did not contain image data.");
+        }
+
+        function displayPromptGroup(title, images, container) {
+            const groupWrapper = document.createElement('div');
+            groupWrapper.className = 'mb-6 border-b-2 border-gray-700 pb-4';
+
+            if (title) {
+                const titleEl = document.createElement('h3');
+                titleEl.className = 'text-lg font-semibold text-gray-200 text-center mb-4';
+                titleEl.textContent = title;
+                groupWrapper.appendChild(titleEl);
+            }
+            
+            const imageGrid = document.createElement('div');
+            imageGrid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+            
+            images.forEach((base64, index) => {
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'flex flex-col gap-2 items-center';
+
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${base64}`;
+                img.className = 'rounded-lg object-contain w-full h-auto';
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = img.src;
+                downloadLink.download = `${title || 'image'}_${index + 1}.png`;
+                downloadLink.className = 'w-full max-w-xs bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out flex items-center justify-center text-sm';
+                downloadLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download`;
+
+                imageContainer.appendChild(img);
+                imageContainer.appendChild(downloadLink);
+                imageGrid.appendChild(imageContainer);
+            });
+
+            groupWrapper.appendChild(imageGrid);
+            container.appendChild(groupWrapper);
+        }
+
+        async function downloadAllImagesAsZip() {
+            if (generatedImagesData.length === 0) return showError("No images to download.");
+
+            const zip = new JSZip();
+            generatedImagesData.forEach(img => {
+                zip.file(img.name, img.data, { base64: true });
+            });
+
+            try {
+                const content = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `ai-generated-batch-${Date.now()}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("Error creating zip file:", error);
+                showError("Failed to create zip file.");
+            }
+        }
+        
+        function handleError(error, context = "") {
+            console.error("Error generating image:", error);
+            showError(`${context} ${error.message}`);
+            loader.classList.add('hidden');
+            if (!resultsContainer.hasChildNodes()) placeholder.classList.remove('hidden');
+        }
+
+        async function fetchWithRetry(url, options, retries = 3, backoff = 500) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 || response.status >= 500) throw new Error(`Server error or rate limit: ${response.status}`);
+                    return response;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, backoff * Math.pow(2, i)));
+                }
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorBox.classList.remove('hidden');
+            setTimeout(() => errorBox.classList.add('hidden'), 5000);
+        }
+
+        function hideError() {
+            errorBox.classList.add('hidden');
+        }
+        
+        // Initial setup
+        switchMode('single');
+
+    </script>
+</body>
+</html>
