@@ -35,7 +35,7 @@ window.initQrPayment = function() {
             title: "CIMB Bank",
             qrCodes: [
                 { img: "images/cimb_account1.svg", text: "CIMB KHR 2000122000089089" },
-                { img: "images/cimb_account3.svg", text: "CIMB USD 2010121000600070" },
+                { img: "images/cimb_account3.svg", text: "CIMB CarLoan 2010121000600070" },
                 { img: "images/cimb_account2.svg", text: "CIMB USD 2010121000054610" }
             ]
         },
